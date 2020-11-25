@@ -1,14 +1,15 @@
 #include<iostream>
 #include<Windows.h>
 #include <time.h>
+#include <list>
 
 // n = distance from start.
 // -3 = unreachable.
 // -2 = obstacle.
 // -1 = default staring values.
 
-const int WIDTH = 5;
-const int HEIGHT = 5;
+const int WIDTH = 15;
+const int HEIGHT = 15;
 
 struct Coords
 {
@@ -19,13 +20,15 @@ struct Coords
 
 Coords grid[WIDTH][HEIGHT] = { {0} };
 
+// "(" << grid[x][y].x << ", " << grid[x][y].y << ")"  << "\t= "
+
 void displayGrid()
 {
 	for (int y = 0; y < HEIGHT; ++y)
 	{
 		for (int x = 0; x < WIDTH; ++x)
 		{
-			std::cout << "[ " << "(" << grid[x][y].x << ", " << grid[x][y].y << ")"  << " = " << grid[x][y].value <<  " ] ";
+			std::cout << grid[x][y].value << '\t';
 
 			//Sleep(250);
 		}
@@ -72,29 +75,66 @@ void initGrid()
 	}
 }
 
-// SECOND ATTEMPT!
-void leeAlgoFlood()
+void leeAlgoFlood3()
 {
-	// Set starting point on grid to value 0 to represent 0 distance from the starting point.
-	grid[0][0].value = 0;
-	Coords start = grid[0][0];
-	Coords end = grid[WIDTH - 1][HEIGHT - 1];
-	int currDistance = 0;
-	bool counted = false;
-	bool noPath = false;
-
-	for (int y = 0; y < HEIGHT; ++y)
+	// Set random start and end positions.
+	bool xCoordsNogood = true;
+	bool yCoordsNogood = true;
+	int randStX;
+	int randEndX;
+	int randStY;
+	int randEndY;
+	
+	// Keep re-generating randX positions until we have startX < endX
+	while (xCoordsNogood)
 	{
-		for (int x = 0; x < WIDTH; ++x)
+		randStX = rand() % (WIDTH - 1);
+		randEndX = rand() % (WIDTH - 1);
+
+		if (randStX < randEndX)
 		{
+			xCoordsNogood = false;
+		}
+	}
+	
+	// Keep re-generating randY positions until we have startY < endY
+	while (yCoordsNogood)
+	{
+		randStY = rand() % (HEIGHT - 1);
+		randEndY = rand() % (HEIGHT - 1);
+
+		if (randStY < randEndY)
+		{
+			yCoordsNogood = false;
+		}
+	}
+
+	std::cout << "\nStarting Pos: (" << randStX << ", " << randStY << ")\n";
+	std::cout << "EndingPos: (" << randEndX << ", " << randEndY << ")\n";
+
+	// Set starting point on grid to value 0 to represent 0 distance from the starting point.
+	Coords startPos = grid[randStX][randStY];
+	Coords endPos = grid[randEndX][randEndY];
+	grid[randStX][randStY].value = 0;
+	grid[randEndX][randEndY].value = 0;
+	int currDistance = 0;
+	bool isPath = false;
+
+	for (int y = randStY; y < HEIGHT; ++y)
+	{
+		for (int x = randStX; x < WIDTH; ++x)
+		{
+			// Check if we've hit a blockage or a value that is still deafult.
+			// If we have move to next cell in row and check again.
 			if (grid[x][y].value < 0)
 			{
 				continue;
 			}
 
+			// Set the current distance from the start to the value of the cell we're currently on.
 			currDistance = grid[x][y].value;
 
-			// Check adjacent cells are not blocked OR on an edge.
+			// Check adjacent 'x' cell to the right is not blocked OR on an edge.
 			if (grid[x + 1][y].value == -2 || (x + 1) == WIDTH)
 			{
 				// Blocked. Or edge. Do nothing.
@@ -104,6 +144,7 @@ void leeAlgoFlood()
 				grid[x + 1][y].value = grid[x][y].value + 1;
 			}
 
+			// Check adjacent 'y' cell below us is not blocked or an edge.
 			if (grid[x][y + 1].value == -2 || (y + 1) == HEIGHT)
 			{
 				// Blocked. Or edge. Do nothing.
@@ -111,6 +152,121 @@ void leeAlgoFlood()
 			else
 			{
 				grid[x][y + 1].value = grid[x][y].value + 1;
+			}
+
+			// If our current grid position is the same as the end goal position, the there is a path.
+			if (grid[x][y].x == endPos.x && grid[x][y].y == endPos.y)
+			{
+				// We have found the end position.
+				// exit out of everything.
+				grid[x][y].value = (char)35;
+				isPath = true;
+				break;
+			}
+		}
+
+		if (isPath)
+		{
+			break;
+		}
+	}
+
+	if (isPath)
+	{
+		std::cout << "\nThere was a path!\n";
+	}
+	else
+	{
+		std::cout << "\nThere was no path!\n";
+	}
+}
+
+// SECOND ATTEMPT!
+bool leeAlgoFlood()
+{
+	// Set starting point on grid to value 0 to represent 0 distance from the starting point.
+	Coords startPos = grid[0][0];
+	Coords endPos = grid[WIDTH - 1][HEIGHT - 1];
+	grid[0][0].value = 0;
+	int currDistance = 0;
+	bool noPath = false;
+
+	for (int y = 0; y < HEIGHT; ++y)
+	{
+		for (int x = 0; x < WIDTH; ++x)
+		{
+			if (grid[x][y].x == endPos.x && grid[x][y].y == endPos.y)
+			{
+				// We have found the end position.
+				// exit out of everything.
+			}
+
+			// Check if we've hit a blockage or a value that is still deafult.
+			// If we have move to next cell in row and check again.
+			if (grid[x][y].value < 0)
+			{
+				continue;
+			}
+
+			// Set the current distance from the start to the value of the cell we're currently on.
+			currDistance = grid[x][y].value;
+
+			// Check adjacent 'x' cell to the right is not blocked OR on an edge.
+			if (grid[x + 1][y].value == -2 || (x + 1) == WIDTH)
+			{
+				// Blocked. Or edge. Do nothing.
+			}
+			else
+			{
+				grid[x + 1][y].value = grid[x][y].value + 1;
+			}
+
+			// Check adjacent 'y' cell below us is not blocked or an edge.
+			if (grid[x][y + 1].value == -2 || (y + 1) == HEIGHT)
+			{
+				// Blocked. Or edge. Do nothing.
+			}
+			else
+			{
+				grid[x][y + 1].value = grid[x][y].value + 1;
+			}
+
+			// Make sure we're not on the upper 'y' edge.
+			if (y > 0)
+			{
+				// Check adjacent 'y' cell above us has been assigned a value.
+				if (grid[x][y - 1].value == -1)
+				{
+					grid[x][y - 1].value = grid[x][y].value + 1;
+				}
+			}
+
+			// Make sure we're not on the left 'x' edge.
+			if (x > 0)
+			{
+				int currXPos = x;
+
+				// Loop over all adjacent 'x' cells to the "left" of our current position and assign them relevant distance.
+				while (grid[currXPos - 1][y].value == -1)
+				{
+					grid[currXPos - 1][y].value = grid[currXPos][y].value + 1;
+					--currXPos;
+
+					// Make sure we're not on the upper 'y' edge.
+					if (y > 0)
+					{
+						// Check adjacent 'y' cell above us has been assigned a value.
+						if (grid[currXPos][y - 1].value == -1)
+						{
+							grid[currXPos][y - 1].value = grid[currXPos][y].value + 1;
+						}
+					}
+					
+					if (currXPos == 0)
+					{
+						break;
+					}
+				}
 			}
 		}
 	}
@@ -123,13 +279,43 @@ void leeAlgoFlood()
 
 	if (noPath)
 	{
-		std::cout << "There was no path!\n";
+		std::cout << "\nThere was no path!\n";
 	}
 	else
 	{
-		std::cout << "There was a path!\n";
+		std::cout << "\nThere was a path!\n";
 	}
+
+	return noPath;
 }
+
+//std::list<Coords> leeAlgoTrace()
+//{
+//	std::list<Coords> route;
+//
+//	// Start at end coords
+//	// Loop over checking adjacent cells for a value 1 less than currValue
+//	// When we find one store the coords of that location in the list and move to that position
+//	// Repeat until we are at the start coords.
+//
+//	Coords end = grid[WIDTH - 1][HEIGHT - 1];
+//	Coords start = grid[0][0];
+//
+//	for (int y = (HEIGHT - 1); y > 0; --y)
+//	{
+//		for (int x = (WIDTH - 1); x > 0; --x)
+//		{
+//			if (grid[x - 1][y].value == (grid[x][y].value - 1))
+//			{
+//				// Store coords and move here.
+//			}
+//			else
+//			{
+//				// Check the adjacent y cell.
+//			}
+//		}
+//	}
+//}
 
 // FIRST ATTEMPT!
 void leeAlgorithmFlood()
@@ -243,14 +429,20 @@ int main()
 {
 	/* initialize random seed: */
 	srand(time(NULL));
+	bool isPath = false;
 
 	initGrid();
 	displayGrid();
-	leeAlgoFlood();
+	leeAlgoFlood3();
 
 	std::cout << '\n';
 	
 	displayGrid();
+
+	/*if (isPath)
+	{
+		leeAlgoTrace();
+	}*/
 
 	return 0;
 }
