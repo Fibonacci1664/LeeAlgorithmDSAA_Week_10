@@ -24,8 +24,6 @@ Coords grid[WIDTH][HEIGHT] = { {0} };
 Coords endPoint;
 Coords startPoint;
 
-// "(" << grid[x][y].x << ", " << grid[x][y].y << ")"  << "\t= "
-
 void displayGrid()
 {
 	for (int y = 0; y < HEIGHT; ++y)
@@ -44,7 +42,7 @@ void displayGrid()
 
 void initGrid()
 {
-	int randNumOfObstacles = rand() % (WIDTH * 6);	// generate a random number of obstacles based on size of grid.
+	int randNumOfObstacles = rand() % (WIDTH * 8);	// generate a random number of obstacles based on size of grid.
 	int obstaclesPlaced = 0;
 
 	// Populate cells with default value -1.
@@ -65,14 +63,7 @@ void initGrid()
 	{
 		// generate random coords.
 		int randX = rand() % WIDTH;		// rtn a number between 0 and WIDTH - 1
-		int randY = rand() % HEIGHT;	// rtn a number between 0 and HEIGHT - 1
-
-		//while (randX == (WIDTH - 1) && randY == (HEIGHT - 1))
-		//{
-		//	// Re-generate random coords. This prevents us having an obstacle in the end cell.
-		//	randX = rand() % WIDTH;		// rtn a number between 0 and WIDTH - 1
-		//	randY = rand() % HEIGHT;	// rtn a number between 0 and HEIGHT - 1
-		//}		
+		int randY = rand() % HEIGHT;	// rtn a number between 0 and HEIGHT - 1	
 
 		grid[randX][randY].value = BLOCKER; // places obstacle at random location, doesn't matter if location is (0,0) as this will be manually set again at the start of the lee algo.
 		++obstaclesPlaced;
@@ -89,15 +80,26 @@ bool leeAlgoFlood4()
 	int randEndX = rand() % WIDTH;
 	int randStY = rand() % HEIGHT;
 	int randEndY = rand() % HEIGHT;
+	bool sameCoord = false;
+
+	// If we get the same coords for start and end. Prevent starting and ending in the same place.
+	if(randStX == randEndX && randStY == randEndY)
+	{
+		// Check if our x is less than the WIDTH - 1
+		if (randStX < (WIDTH - 1))
+		{
+			// If it is, we can safely add 1 on to it without going off the end.
+			++randStX;
+		}
+		else
+		{
+			// Otherwise we're sitting at the end and so - 1.
+			--randStX;
+		}
+	}
 
 	std::cout << "\nStarting Pos: (" << randStX << ", " << randStY << ")\n";
 	std::cout << "EndingPos: (" << randEndX << ", " << randEndY << ")\n";
-
-	// Prevent starting and ending in the same place.
-	while (randStX == randEndX)
-	{
-		randStX = rand() % WIDTH;
-	}
 
 	// Set starting point on grid to value 0 to represent 0 distance from the starting point.
 	endPoint.x = grid[randEndX][randEndY].x;
@@ -106,7 +108,6 @@ bool leeAlgoFlood4()
 	startPoint.y = grid[randStX][randStY].y;
 	grid[randStX][randStY].value = 0;
 	grid[randEndX][randEndY].value = -1;		// To ensure that the end point is not blocked.
-	//grid[1][0].value = -1;						// This is to ensure the upper left most corner is NOT boxed in, thus allowing the check in the while loop to be performed.
 	
 	int currDistance = 0;
 	bool updatedValue = false;
@@ -232,7 +233,6 @@ void leeAlgoTrace()
 	// Loop over checking adjacent cells for a value 1 less than currValue
 	// When we find one store the coords of that location in the list and move to that position
 	// Repeat until we are at the start coords.
-	//Coords currPos = grid[0][0];
 	bool savedCoord = false;
 	bool startFound = false;
 	bool hasNewCoord = false;
@@ -242,100 +242,76 @@ void leeAlgoTrace()
 
 	while (!startFound)
 	{
-		for (; y != startPoint.y; )
+		// Check left
+		// Make sure we're not going to check off the start of the array.
+		if (x > 0)
 		{
-			for (; x != startPoint.x; )
+			// If the cell to our left is equal to our current value -1.
+			if (grid[x - 1][y].value == (grid[x][y].value - 1))
 			{
-				/*if (grid[x][y].value == BLOCKER || grid[x][y].value == -1 || grid[x][y].value < currDistance)
+				// Save coords, and skip to next iteration.
+				route.push_back(grid[x - 1][y]);
+				savedCoord = true;
+				--x;
+			}
+		}
+
+		if (!savedCoord)
+		{
+			// Check right
+			// Make sure we're not going to check of the end of the array.
+			if (x < (WIDTH - 1))
+			{
+				// If the cell to our right is equal to our current value -1.
+				if (grid[x + 1][y].value == (grid[x][y].value - 1))
 				{
-					continue;
-				}*/
-
-				//currDistance = grid[x][y].value;
-
-				// Check left
-				// Make sure we're not going to check off the start of the array.
-				if (x > 0)
-				{
-					// If the cell to our left is equal to our current value -1.
-					if (grid[x - 1][y].value == (grid[x][y].value - 1))
-					{
-						// Save coords, and skip to next iteration.
-						route.push_back(grid[x - 1][y]);
-						--x;
-						savedCoord = true;
-					}
-				}
-
-				if (!savedCoord)
-				{
-					// Check right
-					// Make sure we're not going to check of the end of the array.
-					if (x < (WIDTH - 1))
-					{
-						// If the cell to our right is equal to our current value -1.
-						if (grid[x + 1][y].value == (grid[x + 1][y].value - 1))
-						{
-							// Save coords, and skip to next iteration.
-							route.push_back(grid[x + 1][y]);
-							savedCoord = true;
-							++x;
-						}
-					}
-				}
-
-				if (!savedCoord)
-				{
-					// Check up
-					if (y > 0)
-					{
-						// If the cell above us is equal to our current value -1.
-						if (grid[x][y - 1].value == (grid[x][y - 1].value - 1))
-						{
-							// Save coords, and skip to next iteration.
-							route.push_back(grid[x][y - 1]);
-							savedCoord = true;
-							--y;
-						}
-					}
-				}
-
-				if (!savedCoord)
-				{
-					// Check down
-					if (y < (HEIGHT - 1))
-					{
-						// If the cell below us is equal to our current value -1.
-						if (grid[x][y + 1].value == (grid[x][y + 1].value - 1))
-						{
-							// Save coords, and skip to next iteration.
-							route.push_back(grid[x][y + 1]);
-							savedCoord = true;
-							++y;
-						}
-					}
-				}
-
-
-				if (savedCoord)
-				{
-					--currDistance;
-				}
-
-				savedCoord = false;
-
-				// If during looping we find the start, set to true and break.
-				if (currDistance == 0)
-				{
-					startFound = true;
-					break;
+					// Save coords, and skip to next iteration.
+					route.push_back(grid[x + 1][y]);
+					savedCoord = true;
+					++x;
 				}
 			}
+		}
 
-			if (startFound)
+		if (!savedCoord)
+		{
+			// Check up
+			if (y > 0)
 			{
-				break;
+				// If the cell above us is equal to our current value -1.
+				if (grid[x][y - 1].value == (grid[x][y].value - 1))
+				{
+					// Save coords, and skip to next iteration.
+					route.push_back(grid[x][y - 1]);
+					savedCoord = true;
+					--y;
+				}
 			}
+		}
+
+		if (!savedCoord)
+		{
+			// Check down
+			if (y < (HEIGHT - 1))
+			{
+				// If the cell below us is equal to our current value -1.
+				if (grid[x][y + 1].value == (grid[x][y].value - 1))
+				{
+					// Save coords, and skip to next iteration.
+					route.push_back(grid[x][y + 1]);
+					savedCoord = true;
+					++y;
+				}
+			}
+		}
+
+		savedCoord = false;
+
+		// If during looping we find the start, set to true and break.
+		if (grid[x][y].value == 0)
+		{
+			startFound = true;
+			break;
 		}
 	}
 
@@ -345,7 +321,6 @@ void leeAlgoTrace()
 		std::cout << "route: (" << it.x << ", "<< it.y << ")" << '\n';
 	}
 }
-
 
 
 int main()
@@ -362,10 +337,10 @@ int main()
 	
 	displayGrid();
 
-	/*if (isPath)
+	if (isPath)
 	{
 		leeAlgoTrace();
-	}*/
+	}
 
 	return 0;
 }
